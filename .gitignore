@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+publish/
+*.user
+*.suo
+
+# IDE / tooling
+.vs/
+.idea/
+*.rsuser
+
+# Local runtime data (never commit)
+Backups/
+shots/
+*.log
+prefs.json
+
+# OS
+Thumbs.db
+.DS_Store
