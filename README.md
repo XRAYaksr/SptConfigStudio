@@ -87,7 +87,7 @@ creates a verified ZIP backup before writing, and ships no game or server assets
 ## 构建与运行
 
 ```bash
-git clone <本仓库地址>
+git clone https://github.com/XRAYaksr/SptConfigStudio.git
 cd SptConfigStudio
 
 # 调试运行
