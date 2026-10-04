@@ -93,11 +93,16 @@ cd SptConfigStudio
 # 调试运行
 dotnet run
 
-# 发布（免装 .NET 运行时）
-dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+# 打包发布（生成两个压缩包）
+pwsh -File package.ps1 -Version 1.1.0
 ```
 
-产物位于 `bin/Release/net10.0-windows/`（框架依赖）或 `publish/`（自包含）。
+`package.ps1` 在 `release/` 下产出两个 Windows x64 压缩包：
+
+- **framework-dependent**：体积小，需先安装 .NET 桌面运行时 10.0.x。
+- **self-contained**：内置运行时，解压即可运行，无需安装任何东西。
+
+调试运行的产物位于 `bin/Release/net10.0-windows/`。打包脚本请用 **pwsh（PowerShell 7+）** 运行：Windows PowerShell 5.1 自带的压缩实现会写出以反斜杠分隔的条目名，这类压缩包在跨平台解压工具下会摊成一层带反斜杠的文件名。
 
 ## 快速开始
 
@@ -124,6 +129,8 @@ SptConfigStudio/
 ├── App.xaml(.cs)              应用入口与主题合并
 ├── MainWindow.xaml(.cs)       主窗口、左侧导航与页面切换
 ├── SptConfigStudio.csproj     net10.0-windows / WPF
+├── package.ps1                生成两个发布压缩包
+├── CHANGELOG.md               版本变更说明
 ├── Core/
 │   ├── AppEnv.cs              定位服务端安装目录、读写 prefs
 │   ├── Workspace.cs           配置集合与保存流程（含强制备份）
@@ -136,7 +143,10 @@ SptConfigStudio/
 │   ├── DiffEngine.cs          差异计算
 │   └── ServerStatus.cs        本机服务端健康状态探测
 ├── Ui/
+│   ├── NavPane.cs             可折叠侧边导航
+│   ├── Icons.cs               按字段语义匹配图标
 │   ├── QuickView.cs           快速调整面板
+│   ├── AppearanceView.cs      外观设置页（配色、主题色、材质）
 │   ├── ConfigView.cs          结构化 / 原始 JSON 双视图
 │   ├── FieldRenderer.cs       单个字段的渲染与交互
 │   ├── BackupView.cs          备份与还原
@@ -144,7 +154,10 @@ SptConfigStudio/
 │   ├── SetupWizard.cs         首次设置向导
 │   ├── Dialogs.cs             通用对话框
 │   └── Ui.cs                  控件工厂与排版助手
-└── Theme/Dark.xaml            深色主题资源字典
+└── Theme/
+    ├── Dark.xaml              深色色板
+    ├── Light.xaml             浅色色板
+    └── Appearance.cs          配色切换与强调色派生
 ```
 
 ## 中文标注机制
@@ -163,6 +176,7 @@ SptConfigStudio/
 - 仅支持 JSON 配置文件，不处理数据库记录、任务定义或 mod 本身。
 - 配置文件结构随服务端版本更新可能变化，新增键会退回分词翻译或原文显示。
 - 部分深层数组（如机器人的分组弹药配置）以索引形式展开，阅读性有限。
+- 左侧导航栏以鼠标点击切换，暂不支持方向键与回车选中。
 - 界面为中文，暂无英文界面对照。
 
 ## 商标与第三方权利
