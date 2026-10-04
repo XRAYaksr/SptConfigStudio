@@ -42,11 +42,10 @@ public sealed class BackupView
 
     private FrameworkElement Build()
     {
-        var head = new StackPanel { Margin = Ui.T(0, 0, 0, 12) };
-        head.Children.Add(Ui.Text("备份与还原", 20, weight: FontWeights.SemiBold));
-        head.Children.Add(Ui.Text(
-            "每次点「保存修改」都会先自动打包一份 zip 并校验，成功后才写入磁盘。这里可以手动补一份，或回到任意一份备份。",
-            12, "Brasa.TextDim", wrap: true));
+        var head = Ui.PageHeader(
+            "备份与还原", Icons.ForFile("backup"), null,
+            "每次点「保存修改」都会先自动打包一份 zip 并校验，成功后才写入磁盘。这里可以手动补一份，或回到任意一份备份。");
+        head.Margin = Ui.T(0, 0, 0, 12);
 
         var scopeHint = Ui.Text(BackupScopes.All[0].Hint, 11.5, "Brasa.TextDim");
         scopeHint.VerticalAlignment = VerticalAlignment.Center;
@@ -219,14 +218,12 @@ public sealed class BackupView
     public static void PickAndRestore(Window owner, Workspace ws, Action refreshHost)
     {
         var view = new BackupView(ws, refreshHost);
-        var win = new Window
+        var win = new Wpf.Ui.Controls.FluentWindow
         {
-            Title = "还原备份",
             Owner = owner,
             Width = 860,
             Height = 620,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Background = Ui.Res("Brasa.Background"),
             ShowInTaskbar = false
         };
 
@@ -237,7 +234,7 @@ public sealed class BackupView
         DockPanel.SetDock(note, Dock.Top);
         root.Children.Add(note);
         root.Children.Add(content);
-        win.Content = root;
+        Ui.Chrome(win, "还原备份", root, maximizable: true);
         win.ShowDialog();
     }
 }

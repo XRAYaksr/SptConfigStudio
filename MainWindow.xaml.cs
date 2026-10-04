@@ -4,21 +4,22 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using SptConfigStudio.Core;
+using SptConfigStudio.Theme;
 using SptConfigStudio.Views;
 
 namespace SptConfigStudio;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 {
-    private static readonly string[] CategoryOrder = ["基础", "玩法", "世界", "高级", "其他"];
-
     private Workspace? _ws;
     private readonly Dictionary<string, ConfigView> _views = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, RadioButton> _nav = new(StringComparer.OrdinalIgnoreCase);
+    private NavPane? _navPane;
     private QuickView? _quick;
     private BackupView? _backup;
+    private AppearanceView? _appearance;
     private DispatcherTimer? _searchTimer;
     private DispatcherTimer? _statusTimer;
     private string _current = "quick";
@@ -26,9 +27,19 @@ public partial class MainWindow : Window
     private string? _startupNote;
     private static string? _pendingNote;
 
+    private const double PaneOpenWidth = 240;
+    private const double PaneCompactWidth = 48;
+
     public MainWindow()
     {
         InitializeComponent();
+        Ui.BaseChrome(this);
+        Appearance.ApplyFromPrefs(this);
+        Nav.IsPaneOpen = AppEnv.PaneOpen;
+        PaneShell.Width = AppEnv.PaneOpen ? PaneOpenWidth : PaneCompactWidth;
+        Nav.PaneOpened += (_, _) => OnPaneState(true);
+        Nav.PaneClosed += (_, _) => OnPaneState(false);
+        Activated += (_, _) => RefreshSystemAppearance();
         Loaded += OnLoaded;
         Closing += OnClosing;
         PreviewKeyDown += (_, e) =>
@@ -36,6 +47,41 @@ public partial class MainWindow : Window
             if (e.Key == Key.Escape && SearchOverlay.Visibility == Visibility.Visible) SearchOverlay.Visibility = Visibility.Collapsed;
             if (e.Key == Key.F && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { Search.Focus(); e.Handled = true; }
         };
+    }
+
+    /// <summary>
+    /// WPF-UI animates its own pane column between 232 and a hard-coded 40 over 160ms at AccelerationRatio 0.4.
+    /// Matching that curve exactly keeps this shell 8px wider than the pane at every frame, which is what stops the
+    /// NavigationView's own zero-width content column from opening a sliver between the sidebar and the editor.
+    /// </summary>
+    private void OnPaneState(bool open)
+    {
+        var target = open ? PaneOpenWidth : PaneCompactWidth;
+        var anim = new DoubleAnimation(PaneShell.ActualWidth, target, TimeSpan.FromMilliseconds(160))
+        {
+            AccelerationRatio = 0.4,
+            FillBehavior = FillBehavior.Stop
+        };
+        anim.Completed += (_, _) =>
+        {
+            PaneShell.Width = target;
+            PaneShell.BeginAnimation(WidthProperty, null);
+        };
+        PaneShell.BeginAnimation(WidthProperty, anim);
+        _navPane?.SetHeaderVisible(open);
+        AppEnv.SetPaneOpen(open);
+    }
+
+    /// <summary>Coming back to the foreground is when both follow-system settings get re-read.</summary>
+    private void RefreshSystemAppearance()
+    {
+        // Ordered before the accent branch: the AccentKind early return below would otherwise short-circuit it.
+        if (Appearance.ParseScheme(AppEnv.ThemeKind) == Scheme.System && Appearance.SystemPrefersLight() != Appearance.IsLight)
+            Appearance.ApplyScheme(this, Scheme.System);
+
+        if (AppEnv.AccentKind != "system") return;
+        var sys = Appearance.ResolveSystemAccent();
+        if (sys is not null && Appearance.AppliedAccent != sys.Value) Appearance.ApplyAccent(sys.Value);
     }
 
     // ------------------------------------------------------------------ startup
@@ -137,27 +183,10 @@ public partial class MainWindow : Window
 
     private void BuildNav()
     {
-        Nav.Children.Clear();
-        _nav.Clear();
-        AddNav("quick", "快速调整", "藏身处、空投、战局等常用项的中文面板", false, accent: true);
-
-        var groups = _ws!.Files.GroupBy(f => f.Category).ToList();
-        foreach (var cat in CategoryOrder.Concat(groups.Select(g => g.Key).Where(k => !CategoryOrder.Contains(k))))
-        {
-            var inCat = groups.FirstOrDefault(g => g.Key == cat);
-            if (inCat is null) continue;
-            Nav.Children.Add(CategoryHeader(cat));
-            foreach (var f in inCat) AddNav(f.FileName, f.Title, f.Description, f.Advanced);
-        }
-
-        Nav.Children.Add(CategoryHeader("工具"));
-        AddNav("backup", "备份与还原", "查看、创建、还原压缩包备份", false, accent: true);
-
-        var again = Ui.Btn("重开首次向导", (_, _) => ReopenWizard(), tip: "再走一遍：确认目录 → 备份机制 → 初始快照");
-        again.FontSize = 12;
-        again.Margin = Ui.T(16, 12, 16, 6);
-        again.HorizontalAlignment = HorizontalAlignment.Left;
-        Nav.Children.Add(again);
+        _navPane = new NavPane(Nav, Show);
+        _navPane.WizardRequested += ReopenWizard;
+        _navPane.Build(_ws!);
+        _navPane.SetHeaderVisible(Nav.IsPaneOpen);
     }
 
     private void ReopenWizard()
@@ -177,42 +206,18 @@ public partial class MainWindow : Window
         _ = RefreshStatus();
     }
 
-    private static TextBlock CategoryHeader(string cat)
-    {
-        var tb = Ui.Text(cat, 11, "Brasa.Accent", weight: FontWeights.SemiBold);
-        tb.Margin = Ui.T(16, 12, 12, 4);
-        return tb;
-    }
-
-    private void AddNav(string key, string title, string tip, bool advanced, bool accent = false)
-    {
-        var rb = new RadioButton
-        {
-            Style = (Style)FindResource("Brasa.NavItem"),
-            GroupName = "nav",
-            Content = advanced ? title + " ·高级" : title,
-            ToolTip = tip.Length > 0 ? tip : title,
-            Tag = key,
-            IsChecked = key == _current
-        };
-        if (advanced) rb.SetResourceReference(Control.ForegroundProperty, "Brasa.TextDim");
-        if (accent) rb.SetResourceReference(Control.ForegroundProperty, "Brasa.AccentHi");
-        rb.Checked += (_, _) => Show(key);
-        _nav[key] = rb;
-        Nav.Children.Add(rb);
-    }
-
     private void Show(string key)
     {
         if (_ws is null) return;
         _current = key;
-        if (_nav.TryGetValue(key, out var rb)) rb.IsChecked = true;
+        _navPane?.MarkActive(key);
         SearchOverlay.Visibility = Visibility.Collapsed;
 
         Host.Content = key switch
         {
             "quick" => (_quick ??= new QuickView(_ws)).Root,
             "backup" => (_backup ??= new BackupView(_ws, RefreshCurrent)).Root,
+            "appearance" => (_appearance ??= new AppearanceView(this, Nav)).Root,
             _ => FileView(key)
         };
         UpdateActions();
@@ -229,7 +234,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Rebuilds the visible editor from the (still in-memory) documents. Edits live in the JSON DOM, so nothing is lost.</summary>
-    private void RefreshCurrent()
+    internal void RefreshCurrent()
     {
         _views.Clear();
         _quick = null;
@@ -356,7 +361,6 @@ public partial class MainWindow : Window
 
     private void OnSearchChanged(object sender, TextChangedEventArgs e)
     {
-        SearchPlaceholder.Visibility = string.IsNullOrEmpty(Search.Text) ? Visibility.Visible : Visibility.Collapsed;
         if (_ws is null) return;
         if (Search.Text.Trim().Length < 2)
         {
@@ -394,13 +398,13 @@ public partial class MainWindow : Window
 
         var border = new Border
         {
-            Background = Ui.Res("Brasa.SurfaceAlt"),
             CornerRadius = new CornerRadius(3),
             Margin = Ui.T(0, 2, 0, 2),
             Child = box
         };
-        border.MouseEnter += (_, _) => border.Background = Ui.Res("Brasa.SurfaceHi");
-        border.MouseLeave += (_, _) => border.Background = Ui.Res("Brasa.SurfaceAlt");
+        border.SetResourceReference(Border.BackgroundProperty, "Brasa.SurfaceAlt");
+        border.MouseEnter += (_, _) => border.SetResourceReference(Border.BackgroundProperty, "Brasa.SurfaceHi");
+        border.MouseLeave += (_, _) => border.SetResourceReference(Border.BackgroundProperty, "Brasa.SurfaceAlt");
         border.MouseLeftButtonUp += (_, _) => Navigate(h);
         return border;
     }
@@ -424,8 +428,8 @@ public partial class MainWindow : Window
         var s = _ws.Status;
         ServerText.Text = s.Label;
         ServerDot.Fill = Ui.Res(s.PanelReachable ? "Brasa.Good" : s.ProcessRunning ? "Brasa.Warn" : "Brasa.TextDim");
-        WarnStrip.Visibility = s.ProcessRunning ? Visibility.Visible : Visibility.Collapsed;
-        WarnText.Text = s.PanelReachable
+        WarnStrip.IsOpen = s.ProcessRunning;
+        WarnStrip.Message = s.PanelReachable
             ? "服务端正在运行：写入磁盘不会影响当前进程，需要重启服务端后新配置才会生效。本工具不会自动重启服务端。"
             : "服务端未运行：现在写入的配置会在下次启动时生效。";
     }

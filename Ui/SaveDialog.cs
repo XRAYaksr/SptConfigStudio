@@ -26,22 +26,19 @@ public static class SaveDialog
 {
     public static (bool Confirmed, BackupScope Scope) Review(Window owner, Workspace ws, IReadOnlyList<ConfigDocument> targets)
     {
-        var win = new Window
+        var win = new Wpf.Ui.Controls.FluentWindow
         {
-            Title = "保存前确认",
             Owner = owner,
             Width = 820,
             Height = 640,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Background = Ui.Res("Brasa.Background"),
             ShowInTaskbar = false
         };
 
-        var head = new StackPanel { Margin = Ui.T(0, 0, 0, 10) };
-        head.Children.Add(Ui.Text($"准备写入 {targets.Count} 个配置文件", 17, weight: FontWeights.SemiBold));
-        head.Children.Add(Ui.Text(
-            $"流程：先把当前磁盘内容打包成 zip 并校验完整性（备份目录 {ws.Env.BackupDir}），备份成功后才写入；备份失败则一律不写。",
-            12, "Brasa.TextDim", wrap: true));
+        var head = Ui.PageHeader(
+            $"准备写入 {targets.Count} 个配置文件", Icons.ForFile("backup"), null,
+            $"流程：先把当前磁盘内容打包成 zip 并校验完整性（备份目录 {ws.Env.BackupDir}），备份成功后才写入；备份失败则一律不写。");
+        head.Margin = Ui.T(0, 0, 0, 10);
 
         var scope = new ComboBox { ItemsSource = BackupScopes.All.Select(x => x.Label).ToList(), SelectedIndex = 0, Width = 300, HorizontalAlignment = HorizontalAlignment.Left };
         var scopeHint = Ui.Text(BackupScopes.All[0].Hint, 11.5, "Brasa.TextDim");
@@ -106,7 +103,7 @@ public static class SaveDialog
         root.Children.Add(scopeRow);
         root.Children.Add(footer);
         root.Children.Add(scroll);
-        win.Content = root;
+        Ui.Chrome(win, "保存前确认", root, maximizable: true);
         win.ShowDialog();
 
         var chosen = scope.SelectedIndex >= 0 ? BackupScopes.All[scope.SelectedIndex].Scope : BackupScope.Configs;

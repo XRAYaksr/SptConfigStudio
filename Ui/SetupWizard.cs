@@ -18,7 +18,7 @@ public sealed class SetupWizard
     private const int StepCount = 3;
     private static readonly string[] Crumbs = ["确认游戏目录", "备份与生效机制", "创建初始快照"];
 
-    private readonly Window _win;
+    private readonly Wpf.Ui.Controls.FluentWindow _win;
     private readonly ContentControl _body;
     private readonly TextBlock _crumb;
     private readonly Button _back;
@@ -41,16 +41,14 @@ public sealed class SetupWizard
 
     private SetupWizard(Window? owner, AppEnv env)
     {
-        _win = new Window
+        _win = new Wpf.Ui.Controls.FluentWindow
         {
-            Title = "首次设置向导",
             Width = 700,
             Height = 580,
             MinWidth = 580,
             MinHeight = 470,
             Owner = owner,
             WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-            Background = Ui.Res("Brasa.Background"),
             ShowInTaskbar = false
         };
 
@@ -61,10 +59,10 @@ public sealed class SetupWizard
         _archiveNote = Ui.Text("", 12, "Brasa.TextDim", wrap: true);
         _scope = new ComboBox { Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
 
-        var head = new StackPanel { Margin = Ui.T(0, 0, 0, 10) };
-        head.Children.Add(Ui.Text("首次设置", 20, weight: FontWeights.SemiBold));
-        head.Children.Add(Ui.Text("共三步：确认服务端位置 → 了解备份与生效机制 → 创建初始快照。向导仅读取文件，不会修改任何配置。",
-            12, "Brasa.TextDim", wrap: true));
+        var head = Ui.PageHeader(
+            "首次设置", Icons.ForFile("wizard"), null,
+            "共三步：确认服务端位置 → 了解备份与生效机制 → 创建初始快照。向导仅读取文件，不会修改任何配置。");
+        head.Margin = Ui.T(0, 0, 0, 10);
 
         _crumb = Ui.Text("", 11.5, "Brasa.Accent", weight: FontWeights.SemiBold);
         _crumb.Margin = Ui.T(0, 0, 0, 10);
@@ -101,7 +99,7 @@ public sealed class SetupWizard
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Content = _body
         });
-        _win.Content = panel;
+        Ui.Chrome(_win, "首次设置向导", panel);
 
         _path.TextChanged += (_, _) => Probe();
         Probe();

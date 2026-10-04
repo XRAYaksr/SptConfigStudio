@@ -78,6 +78,49 @@ public sealed class AppEnv
 
     public static void SetWizardDone(bool value) => SetPref("wizardDone", value);
 
+    /// <summary>Appearance prefs are static because the main window applies them before it has an AppEnv instance.</summary>
+    public static string AccentKind
+    {
+        get { try { return LoadPrefs()["accentKind"]?.GetValue<string>() ?? "preset"; } catch { return "preset"; } }
+    }
+
+    public static void SetAccentKind(string value) => SetPref("accentKind", value);
+
+    public static string AccentHex
+    {
+        get { try { return LoadPrefs()["accentHex"]?.GetValue<string>() ?? "E08A2E"; } catch { return "E08A2E"; } }
+    }
+
+    public static void SetAccentHex(string value) => SetPref("accentHex", value);
+
+    public static bool PaneOpen
+    {
+        get { try { return LoadPrefs()["paneOpen"]?.GetValue<bool>() ?? true; } catch { return true; } }
+    }
+
+    public static void SetPaneOpen(bool value) => SetPref("paneOpen", value);
+
+    public static string PaneMaterial
+    {
+        get { try { return LoadPrefs()["paneMaterial"]?.GetValue<string>() ?? "Mica"; } catch { return "Mica"; } }
+    }
+
+    public static void SetPaneMaterial(string value) => SetPref("paneMaterial", value);
+
+    public static string ContentMaterial
+    {
+        get { try { return LoadPrefs()["contentMaterial"]?.GetValue<string>() ?? "Mica"; } catch { return "Mica"; } }
+    }
+
+    public static void SetContentMaterial(string value) => SetPref("contentMaterial", value);
+
+    public static string ThemeKind
+    {
+        get { try { return LoadPrefs()["themeKind"]?.GetValue<string>() ?? "dark"; } catch { return "dark"; } }
+    }
+
+    public static void SetThemeKind(string value) => SetPref("themeKind", value);
+
     private static void SetPref(string key, JsonNode? value)
     {
         var prefs = LoadPrefs();

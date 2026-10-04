@@ -25,16 +25,16 @@ public sealed class FieldRenderer
 
     public FieldRenderer(Workspace ws) => _ws = ws;
 
-    public FrameworkElement Render(FieldNode n, int depth)
+    public FrameworkElement Render(FieldNode n, int depth, bool last = false)
     {
         if (depth == 0) n.DefaultExpanded = true;
         var el = n.Kind switch
         {
-            FieldKind.Toggle => ToggleRow(n, depth),
-            FieldKind.Number or FieldKind.Percent or FieldKind.Duration => NumberRow(n, depth),
-            FieldKind.Text or FieldKind.Enum => TextRow(n, depth),
-            FieldKind.IdRef => IdRefRow(n, depth),
-            FieldKind.Range => RangeRow(n, depth),
+            FieldKind.Toggle => ToggleRow(n, depth, last),
+            FieldKind.Number or FieldKind.Percent or FieldKind.Duration => NumberRow(n, depth, last),
+            FieldKind.Text or FieldKind.Enum => TextRow(n, depth, last),
+            FieldKind.IdRef => IdRefRow(n, depth, last),
+            FieldKind.Range => RangeRow(n, depth, last),
             FieldKind.Group => Section(n, depth, () => ChildrenStack(n, depth)),
             FieldKind.IdList => Section(n, depth, () => IdListBody(n)),
             FieldKind.ScalarList => Section(n, depth, () => ScalarListBody(n)),
@@ -75,7 +75,7 @@ public sealed class FieldRenderer
 
     // ---------------------------------------------------------------- toggles
 
-    private FrameworkElement ToggleRow(FieldNode n, int depth)
+    private FrameworkElement ToggleRow(FieldNode n, int depth, bool last)
     {
         var sw = new CheckBox { Style = (Style)Application.Current.FindResource("Brasa.Switch"), IsChecked = n.GetBool() };
         var state = Ui.Text(sw.IsChecked.Value ? "开" : "关", 12, sw.IsChecked.Value ? "Brasa.Good" : "Brasa.TextDim");
@@ -85,12 +85,12 @@ public sealed class FieldRenderer
         sw.Checked += (_, _) => { n.SetBool(true); state.Text = "开"; state.SetResourceReference(TextBlock.ForegroundProperty, "Brasa.Good"); Touch(n); };
         sw.Unchecked += (_, _) => { n.SetBool(false); state.Text = "关"; state.SetResourceReference(TextBlock.ForegroundProperty, "Brasa.TextDim"); Touch(n); };
 
-        return Ui.Row(LabelFor(n, depth), Ui.HBox(0, sw, state));
+        return Ui.Line(Icons.ForField(n), LabelFor(n, depth), Ui.HBox(0, sw, state), last);
     }
 
     // ---------------------------------------------------------------- numbers
 
-    private FrameworkElement NumberRow(FieldNode n, int depth)
+    private FrameworkElement NumberRow(FieldNode n, int depth, bool last)
     {
         var val = n.GetNumber();
         var box = new TextBox
@@ -124,11 +124,11 @@ public sealed class FieldRenderer
         {
             if (!TryParseNumber(text, out var parsed))
             {
-                box.BorderBrush = Danger;
+                box.SetResourceReference(Control.BorderBrushProperty, "Brasa.Bad");
                 box.ToolTip = "请输入数字（可用小数、负数；-1 通常表示不覆写）。";
                 return;
             }
-            box.BorderBrush = Ui.Res("Brasa.Border");
+            box.SetResourceReference(Control.BorderBrushProperty, "Brasa.Border");
             n.SetNumber(parsed);
             hint.Text = Describe(n, parsed);
             if (!fromSlider && slider is not null) slider.Value = Math.Clamp(parsed, slider.Minimum, slider.Maximum);
@@ -149,7 +149,7 @@ public sealed class FieldRenderer
         var wrap = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         wrap.Children.Add(editors);
         wrap.Children.Add(hint);
-        return Ui.Row(LabelFor(n, depth), wrap);
+        return Ui.Line(Icons.ForField(n), LabelFor(n, depth), wrap, last);
     }
 
     private string Describe(FieldNode n, double v) => n.Kind switch
@@ -167,7 +167,7 @@ public sealed class FieldRenderer
 
     // ---------------------------------------------------------------- text / enum
 
-    private FrameworkElement TextRow(FieldNode n, int depth)
+    private FrameworkElement TextRow(FieldNode n, int depth, bool last)
     {
         if (n.EnumOptions is { Length: > 0 })
         {
@@ -179,19 +179,19 @@ public sealed class FieldRenderer
             {
                 if (combo.SelectedItem is string s) { n.SetString(s); Touch(n); }
             };
-            return Ui.Row(LabelFor(n, depth), combo);
+            return Ui.Line(Icons.ForField(n), LabelFor(n, depth), combo, last);
         }
 
         var box = new TextBox { Text = n.GetString(), MinWidth = 240, MaxWidth = 520, Height = 28, HorizontalAlignment = HorizontalAlignment.Left };
         Ui.SelectAllOnFocus(box);
         box.LostFocus += (_, _) => { n.SetString(box.Text); Touch(n); };
         box.KeyDown += (_, e) => { if (e.Key == Key.Enter) { n.SetString(box.Text); Touch(n); } };
-        return Ui.Row(LabelFor(n, depth), box);
+        return Ui.Line(Icons.ForField(n), LabelFor(n, depth), box, last);
     }
 
     // ---------------------------------------------------------------- item refs
 
-    private FrameworkElement IdRefRow(FieldNode n, int depth)
+    private FrameworkElement IdRefRow(FieldNode n, int depth, bool last)
     {
         var box = new TextBox
         {
@@ -222,7 +222,7 @@ public sealed class FieldRenderer
             Commit();
         });
 
-        return Ui.Row(LabelFor(n, depth), Ui.HBox(8, box, chip, pick));
+        return Ui.Line(Icons.ForField(n), LabelFor(n, depth), Ui.HBox(8, box, chip, pick), last);
     }
 
     private string DescribeId(string id)
@@ -238,7 +238,7 @@ public sealed class FieldRenderer
 
     private FrameworkElement IdListBody(FieldNode n)
     {
-        var panel = new StackPanel();
+        var panel = new StackPanel { Margin = Ui.T(12, 0, 12, 8) };
         if (n.AsArray() is not JsonArray arr) return panel;
 
         var shown = Math.Min(arr.Count, InlineCap);
@@ -289,7 +289,7 @@ public sealed class FieldRenderer
 
     private FrameworkElement ScalarListBody(FieldNode n)
     {
-        var panel = new StackPanel();
+        var panel = new StackPanel { Margin = Ui.T(12, 0, 12, 8) };
         if (n.AsArray() is not JsonArray arr) return panel;
 
         var shown = Math.Min(arr.Count, InlineCap);
@@ -325,7 +325,7 @@ public sealed class FieldRenderer
 
     private FrameworkElement ObjectListBody(FieldNode n, int depth)
     {
-        var panel = new StackPanel();
+        var panel = new StackPanel { Margin = Ui.T(12, 0, 12, 8) };
         if (n.AsArray() is not JsonArray arr) return panel;
 
         var count = Math.Min(arr.Count, ObjectCap);
@@ -400,7 +400,7 @@ public sealed class FieldRenderer
 
     private FrameworkElement IdMapBody(FieldNode n)
     {
-        var panel = new StackPanel();
+        var panel = new StackPanel { Margin = Ui.T(12, 0, 12, 8) };
         if (n.AsObject() is not JsonObject obj) return panel;
 
         var keys = obj.Select(p => p.Key).ToList();
@@ -443,7 +443,7 @@ public sealed class FieldRenderer
 
     private FrameworkElement IdMapRangeBody(FieldNode n)
     {
-        var panel = new StackPanel();
+        var panel = new StackPanel { Margin = Ui.T(12, 0, 12, 8) };
         if (n.AsObject() is not JsonObject obj) return panel;
 
         var keys = obj.Select(p => p.Key).ToList();
@@ -512,16 +512,16 @@ public sealed class FieldRenderer
 
     // ---------------------------------------------------------------- min/max pair
 
-    private FrameworkElement RangeRow(FieldNode n, int depth)
+    private FrameworkElement RangeRow(FieldNode n, int depth, bool last)
     {
         if (n.AsObject() is not JsonObject obj)
-            return Ui.Row(LabelFor(n, depth), Ui.Text("—", 12, "Brasa.TextDim"));
+            return Ui.Line(Icons.ForField(n), LabelFor(n, depth), Ui.Text("—", 12, "Brasa.TextDim"), last);
 
         var min = ChildNumber(n, "min", obj, "min");
         var max = ChildNumber(n, "max", obj, "max");
         var left = Ui.HBox(4, Ui.Text("最小 min", 11.5, "Brasa.TextDim"), NumberBox(min, n));
         var right = Ui.HBox(4, Ui.Text("最大 max", 11.5, "Brasa.TextDim"), NumberBox(max, n));
-        return Ui.Row(LabelFor(n, depth), Ui.HBox(14, left, right));
+        return Ui.Line(Icons.ForField(n), LabelFor(n, depth), Ui.HBox(14, left, right), last);
     }
 
     // ---------------------------------------------------------------- raw
@@ -551,7 +551,7 @@ public sealed class FieldRenderer
                 status.Text = "JSON 无效，未应用";
             }
         });
-        var body = new StackPanel();
+        var body = new StackPanel { Margin = Ui.T(12, 6, 12, 10) };
         body.Children.Add(LabelFor(n, depth));
         body.Children.Add(box);
         body.Children.Add(Ui.HBox(8, apply, status));
@@ -563,39 +563,63 @@ public sealed class FieldRenderer
     private FrameworkElement ChildrenStack(FieldNode n, int depth)
     {
         var p = new StackPanel();
-        foreach (var c in n.Children) p.Children.Add(Render(c, depth + 1));
+        var kids = n.Children;
+        for (var i = 0; i < kids.Count; i++) p.Children.Add(Render(kids[i], depth + 1, i == kids.Count - 1));
         return p;
     }
 
     private FrameworkElement Section(FieldNode n, int depth, Func<FrameworkElement> build, FrameworkElement? headerExtra = null)
     {
-        var body = new StackPanel { Margin = Ui.T(12, 4, 12, 10) };
-        var chevron = Ui.Text("▸", 11, "Brasa.Accent");
-        chevron.Width = 13;
-        chevron.VerticalAlignment = VerticalAlignment.Center;
+        var body = new StackPanel { Margin = Ui.T(0, 0, 0, 4) };
 
-        var summary = Ui.Text(n.ValueSummary(), 11.5, "Brasa.TextDim");
+        var chevron = new Wpf.Ui.Controls.SymbolIcon
+        {
+            Symbol = Wpf.Ui.Controls.SymbolRegular.ChevronRight24,
+            FontSize = 14,
+            Width = 16,
+            Margin = Ui.T(12, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = new RotateTransform()
+        };
+        chevron.SetResourceReference(Control.ForegroundProperty, "Brasa.Accent");
+
+        var glyph = Icons.ForField(n);
+        if (glyph is not null)
+        {
+            glyph.Margin = Ui.T(0, 0, 10, 0);
+            glyph.VerticalAlignment = VerticalAlignment.Center;
+        }
+
+        var summary = Ui.Chip(n.ValueSummary(), "Brasa.TextDim", "Brasa.SurfaceHi", 11.5);
         summary.VerticalAlignment = VerticalAlignment.Center;
-        summary.Margin = Ui.T(8, 0, 0, 0);
+        summary.Margin = Ui.T(8, 0, 12, 0);
 
         var label = LabelFor(n, depth);
-        var header = new Grid { Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = Ui.T(12, 9, 12, 9) };
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        if (headerExtra is not null)
-        {
-            header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            headerExtra.Margin = Ui.T(8, 0, 0, 0);
-            Grid.SetColumn(headerExtra, 3);
-            header.Children.Add(headerExtra);
-        }
+        label.Margin = Ui.T(0, 0, 10, 0);
+        var header = new Grid { Background = Brushes.Transparent, Cursor = Cursors.Hand, MinHeight = 44 };
+        for (var c = 0; c < 5; c++)
+            header.ColumnDefinitions.Add(new ColumnDefinition
+            {
+                Width = c == 2 ? new GridLength(1, GridUnitType.Star) : GridLength.Auto
+            });
         Grid.SetColumn(chevron, 0);
-        Grid.SetColumn(label, 1);
-        Grid.SetColumn(summary, 2);
+        Grid.SetColumn(label, 2);
+        Grid.SetColumn(summary, 3);
         header.Children.Add(chevron);
+        if (glyph is not null)
+        {
+            Grid.SetColumn(glyph, 1);
+            header.Children.Add(glyph);
+        }
         header.Children.Add(label);
         header.Children.Add(summary);
+        if (headerExtra is not null)
+        {
+            headerExtra.Margin = Ui.T(8, 0, 12, 0);
+            Grid.SetColumn(headerExtra, 4);
+            header.Children.Add(headerExtra);
+        }
 
         var root = new StackPanel();
         root.Children.Add(header);
@@ -603,17 +627,18 @@ public sealed class FieldRenderer
 
         var border = new Border
         {
-            BorderBrush = Ui.Res("Brasa.Border"),
-            BorderThickness = Ui.T(1, 1, 1, 1),
-            CornerRadius = new CornerRadius(4),
-            Margin = Ui.T(0, 3, 0, 3),
-            Background = depth == 0 ? Ui.Res("Brasa.Surface") : Ui.Res("Brasa.SurfaceAlt"),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = depth == 0 ? Ui.T(1, 1, 1, 1) : Ui.T(0, 0, 0, 0),
+            Margin = depth == 0 ? Ui.T(0, 0, 0, 10) : Ui.T(12, 2, 12, 8),
             Child = root
         };
+        border.SetResourceReference(Border.BackgroundProperty, depth == 0 ? "Brasa.Surface" : "Brasa.SurfaceAlt");
+        border.SetResourceReference(Border.BorderBrushProperty, "Brasa.Sep");
 
+        var rotate = (RotateTransform)chevron.RenderTransform;
         var open = n.Expanded;
         body.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
-        chevron.Text = open ? "▾" : "▸";
+        rotate.Angle = open ? 90 : 0;
 
         var built = false;
         void Expand()
@@ -630,13 +655,9 @@ public sealed class FieldRenderer
             {
                 Expand();
                 body.Visibility = Visibility.Visible;
-                chevron.Text = "▾";
             }
-            else
-            {
-                body.Visibility = Visibility.Collapsed;
-                chevron.Text = "▸";
-            }
+            else body.Visibility = Visibility.Collapsed;
+            rotate.Angle = n.Expanded ? 90 : 0;
         }
 
         if (open) Expand();
@@ -658,7 +679,7 @@ public sealed class FieldRenderer
 
     private static Grid TwoColumn(FrameworkElement left, FrameworkElement right)
     {
-        var g = new Grid { Margin = Ui.T(0, 1, 0, 1) };
+        var g = new Grid { Margin = Ui.T(0, 1, 0, 1), MinHeight = 36 };
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var pad = new Border { Child = left, Padding = Ui.T(0, 0, 10, 0) };

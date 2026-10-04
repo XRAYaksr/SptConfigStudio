@@ -10,14 +10,12 @@ public static class ItemPicker
 {
     public static string? Pick(Window? owner, Workspace ws, string title)
     {
-        var win = new Window
+        var win = new Wpf.Ui.Controls.FluentWindow
         {
-            Title = title,
             Width = 620,
             Height = 520,
             Owner = owner,
             WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-            Background = (System.Windows.Media.Brush)Application.Current.FindResource("Brasa.Background"),
             ShowInTaskbar = false
         };
 
@@ -84,7 +82,7 @@ public static class ItemPicker
         grid.Children.Add(top);
         grid.Children.Add(list);
         grid.Children.Add(buttons);
-        win.Content = grid;
+        Ui.Chrome(win, title, grid);
 
         win.Loaded += (_, _) =>
         {
@@ -127,14 +125,12 @@ public static class JsonInputDialog
 {
     public static string? Edit(Window? owner, string title, string initial, double height)
     {
-        var win = new Window
+        var win = new Wpf.Ui.Controls.FluentWindow
         {
-            Title = title,
             Width = 640,
             Height = height + 150,
             Owner = owner,
             WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-            Background = (System.Windows.Media.Brush)Application.Current.FindResource("Brasa.Background"),
             ShowInTaskbar = false
         };
 
@@ -176,7 +172,7 @@ public static class JsonInputDialog
         panel.Children.Add(buttons);
         panel.Children.Add(error);
         panel.Children.Add(box);
-        win.Content = panel;
+        Ui.Chrome(win, title, panel);
         win.ShowDialog();
         return result;
     }

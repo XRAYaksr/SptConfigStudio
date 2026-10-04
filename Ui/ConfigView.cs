@@ -13,7 +13,7 @@ public sealed class ConfigView
     private readonly FieldRenderer _r;
     private readonly StackPanel _body = new();
     private readonly TextBlock _dirty;
-    private readonly TabControl _tabs = new();
+    private readonly ContentControl _pane = new();
     private TextBox? _raw;
     private TextBlock _rawStatus = new();
 
@@ -27,7 +27,7 @@ public sealed class ConfigView
         _r = new FieldRenderer(ws)
         {
             Rebuild = RebuildStructured,
-            Touched = () => { _dirty.Text = "有未保存修改"; _dirty.SetResourceReference(TextBlock.ForegroundProperty, "Brasa.Warn"); }
+            Touched = RefreshDirty
         };
         Root = Build();
         RebuildStructured();
@@ -36,11 +36,6 @@ public sealed class ConfigView
     private FrameworkElement Build()
     {
         var meta = MetadataCatalog.Meta(_doc.FileName);
-
-        var title = Ui.Text(meta.Title, 20, weight: FontWeights.SemiBold);
-        var sub = Ui.Mono("SPT_Data\\configs\\" + _doc.FileName, 11.5);
-        var desc = Ui.Text(meta.Description, 12, "Brasa.TextDim", wrap: true);
-        desc.Margin = Ui.T(0, 4, 0, 0);
 
         var expandAll = Ui.Btn("展开全部", (_, _) => { SetExpanded(true); RebuildStructured(); });
         var collapseAll = Ui.Btn("折叠全部", (_, _) => { SetExpanded(false); RebuildStructured(); });
@@ -53,32 +48,19 @@ public sealed class ConfigView
             LoadRaw();
         });
 
-        var actions = Ui.HBox(8, expandAll, collapseAll, reload);
-        actions.HorizontalAlignment = HorizontalAlignment.Right;
-        actions.VerticalAlignment = VerticalAlignment.Top;
+        var headGrid = Ui.PageHeader(
+            meta.Title, Icons.ForFile(_doc.FileName),
+            "SPT_Data\\configs\\" + _doc.FileName, meta.Description,
+            Ui.HBox(8, expandAll, collapseAll, reload), _dirty);
+        headGrid.Margin = Ui.T(0, 0, 0, 14);
 
-        var headGrid = new Grid();
-        headGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        headGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var left = Ui.VBox(title, sub, desc, _dirty);
-        _dirty.Margin = Ui.T(0, 4, 0, 0);
-        Grid.SetColumn(left, 0);
-        Grid.SetColumn(actions, 1);
-        headGrid.Children.Add(left);
-        headGrid.Children.Add(actions);
-
-        var scroll = new ScrollViewer
+        var structured = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Padding = Ui.T(0, 12, 0, 0),
             Content = _body
         };
         _body.Margin = Ui.T(0, 0, 4, 0);
-
-        var structured = new DockPanel();
-        DockPanel.SetDock(headGrid, Dock.Top);
-        structured.Children.Add(headGrid);
-        structured.Children.Add(scroll);
 
         _raw = new TextBox
         {
@@ -122,16 +104,26 @@ public sealed class ConfigView
         rawPanel.Children.Add(rawBar);
         rawPanel.Children.Add(_raw);
 
-        var tabStructured = new TabItem { Header = "结构化编辑", Content = structured };
-        var tabRaw = new TabItem { Header = "原始 JSON", Content = rawPanel };
-        _tabs.Items.Add(tabStructured);
-        _tabs.Items.Add(tabRaw);
-        _tabs.SelectionChanged += (_, _) =>
+        var switcher = Ui.Segmented(new[] { "结构化编辑", "原始 JSON" }, 0, i =>
         {
-            if (ReferenceEquals(_tabs.SelectedItem, tabRaw)) LoadRaw();
-        };
+            _pane.Content = i == 0 ? structured : rawPanel;
+            if (i == 1) LoadRaw();
+        });
+        switcher.HorizontalAlignment = HorizontalAlignment.Left;
+        switcher.Margin = Ui.T(0, 0, 0, 12);
 
-        var pad = new Border { Padding = Ui.T(22, 18, 22, 18), Child = _tabs };
+        _pane.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        _pane.VerticalContentAlignment = VerticalAlignment.Stretch;
+        _pane.Content = structured;
+
+        var dock = new DockPanel();
+        DockPanel.SetDock(headGrid, Dock.Top);
+        DockPanel.SetDock(switcher, Dock.Top);
+        dock.Children.Add(headGrid);
+        dock.Children.Add(switcher);
+        dock.Children.Add(_pane);
+
+        var pad = new Border { Padding = Ui.T(22, 18, 22, 18), Child = dock };
         return pad;
     }
 
@@ -191,8 +183,19 @@ public sealed class ConfigView
     {
         _body.Children.Clear();
         var root = Root_of();
-        foreach (var child in root.Children) _body.Children.Add(_r.Render(child, 0));
-        if (_ws.AnyDirty) { _dirty.Text = "有未保存修改"; _dirty.SetResourceReference(TextBlock.ForegroundProperty, "Brasa.Warn"); }
-        else { _dirty.Text = ""; }
+        var kids = root.Children;
+        for (var i = 0; i < kids.Count; i++) _body.Children.Add(_r.Render(kids[i], 0, i == kids.Count - 1));
+        RefreshDirty();
+    }
+
+    /// <summary>IsDirty compares content, so a commit that changed nothing leaves the header quiet.</summary>
+    private void RefreshDirty()
+    {
+        if (_doc.IsDirty)
+        {
+            _dirty.Text = "有未保存修改";
+            _dirty.SetResourceReference(TextBlock.ForegroundProperty, "Brasa.Warn");
+        }
+        else _dirty.Text = "";
     }
 }
