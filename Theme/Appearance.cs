@@ -151,12 +151,15 @@ public static class Appearance
         res["Brasa.AccentGhost"] = Frozen(new SolidColorBrush(baseAccent) { Opacity = IsLight ? 0.28 : 0.16 });
 
         // Keys WPF-UI resolves with DynamicResource, retargeted in Theme/Dark.xaml: these are the focused field
-        // border, the drop-down pill, the picker selection and the nav selection bar.
+        // border, the drop-down pill and the picker selection.
         Put(res, "TextControlFocusedBorderBrush", hi);
         Put(res, "ComboBoxBorderBrushFocused", hi);
         Put(res, "ComboBoxItemPillFillBrush", baseAccent);
         Put(res, "ListBoxItemSelectedBackgroundThemeBrush", baseAccent);
-        Put(res, "NavigationViewSelectionIndicatorForeground", baseAccent);
+        // The nav selection bar is deliberately invisible: NavPane draws its own so it can slide between rows,
+        // and that one is filled from Brasa.Accent above, so accent changes still land. Leaving this on the accent
+        // would paint a second bar that pops in and out with no animation at all.
+        Put(res, "NavigationViewSelectionIndicatorForeground", Brushes.Transparent);
 
         // Best effort: WPF-UI derives most of these with StaticResource, so a few library widgets may stay on the
         // system accent. Writing them costs nothing and catches the ones resolved dynamically.
@@ -334,9 +337,13 @@ public static class Appearance
         var contentBrush = (Brush)Application.Current.FindResource($"Brasa.Content.{content}");
         res["Brasa.PaneBackground"] = paneBrush;
         res["Brasa.ContentBackground"] = contentBrush;
-        // The NavigationView's own content border sits at zero width beside the pane; keeping it on the same brush
-        // means any rounding sliver is invisible.
-        res["NavigationViewContentBackground"] = contentBrush;
+        // The NavigationView's own content column normally sits at zero width beside the pane. WPF-UI restarts its
+        // pane storyboard from hard-coded From values when a toggle is interrupted, so mid-flight that column can be
+        // 20-odd pixels wide and lands *inside* the sidebar: left on the content brush it shows up as a strip of
+        // editor colour, and its 1px stroke adds a hairline. Both go transparent and the gap reads as sidebar.
+        // Nothing here dims the main area — that is painted by the editor cell's own Brasa.ContentBackground border.
+        res["NavigationViewContentBackground"] = Brushes.Transparent;
+        res["NavigationViewContentGridBorderBrush"] = Brushes.Transparent;
 
         var backdrop = ComposeBackdrop(pane, content);
         win.WindowBackdropType = backdrop;

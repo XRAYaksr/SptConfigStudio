@@ -64,14 +64,28 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- the pane is 232 plus the template's own 4px on each side; compact is 40 plus the same 8px -->
-            <Border Grid.Column="0" x:Name="PaneShell" Width="240"
+            <!-- the pane is 232 plus the template's own 4px on each side; compact is 40 plus the same 8px.
+                 Clipping matters beyond tidiness: the library's PART_ScrollViewer carries Margin="0,0,-4,0", so the
+                 pane really paints ~4px past this border's right edge, today hidden only because the editor cell is
+                 drawn over it. Mid-collapse the shell leads the pane and that overflow becomes a live leak. -->
+            <Border Grid.Column="0" x:Name="PaneShell" Width="240" ClipToBounds="True"
                     Background="{DynamicResource Brasa.PaneBackground}" BorderBrush="{DynamicResource Brasa.Sep}"
                     BorderThickness="0,0,1,0">
-                <ui:NavigationView x:Name="Nav" PaneDisplayMode="LeftMinimal" OpenPaneLength="232"
-                                   CompactPaneLength="40" IsPaneToggleVisible="True" IsBackButtonVisible="Collapsed"
-                                   HeaderVisibility="Collapsed" IsTopSeparatorVisible="False"
-                                   KeyboardNavigation.TabNavigation="Local" />
+                <Grid x:Name="PaneLayer">
+                    <ui:NavigationView x:Name="Nav" PaneDisplayMode="LeftMinimal" OpenPaneLength="232"
+                                       CompactPaneLength="40" IsPaneToggleVisible="True" IsBackButtonVisible="Collapsed"
+                                       HeaderVisibility="Collapsed" IsTopSeparatorVisible="False"
+                                       KeyboardNavigation.TabNavigation="Local" />
+
+                    <!-- the selection bar NavPane slides between rows; the library's own is forced Transparent -->
+                    <Rectangle x:Name="NavCursor" Width="3" Height="16" RadiusX="2" RadiusY="2" Opacity="0"
+                               HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False"
+                               Fill="{DynamicResource Brasa.Accent}">
+                        <Rectangle.RenderTransform>
+                            <TranslateTransform x:Name="NavCursorMove" />
+                        </Rectangle.RenderTransform>
+                    </Rectangle>
+                </Grid>
             </Border>
 
             <Border Grid.Column="1" Background="{DynamicResource Brasa.ContentBackground}">

@@ -29,6 +29,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private const double PaneOpenWidth = 240;
     private const double PaneCompactWidth = 48;
+    private int _paneAnimGen;
 
     public MainWindow()
     {
@@ -50,25 +51,42 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     /// <summary>
-    /// WPF-UI animates its own pane column between 232 and a hard-coded 40 over 160ms at AccelerationRatio 0.4.
-    /// Matching that curve exactly keeps this shell 8px wider than the pane at every frame, which is what stops the
-    /// NavigationView's own zero-width content column from opening a sliver between the sidebar and the editor.
+    /// Two curves run side by side on a toggle: WPF-UI's own, which moves its pane column between 232 and a
+    /// hard-coded 40 over 160ms at AccelerationRatio 0.4 with no easing token to redefine, and this one, which moves
+    /// the shell around it. The rule to live by: at rest the shell is exactly pane + 8, and mid-flight it may only
+    /// ever be narrower than that — the moment it is wider, the NavigationView's zero-width content column shows
+    /// through as a band inside the sidebar. Narrower is harmless, the pane just gets clipped and the labels wipe in.
+    /// Expanding therefore has to trail the library (E &lt;= A, hence the longer ease-in-out); collapsing has to
+    /// outrun it (E &gt;= A, hence a short front-loaded ease-out). One symmetric curve cannot satisfy both: an
+    /// ease-in-out collapse falls about 33px behind the pane and opens that band mid-flight.
+    ///
+    /// The page shares this grid as a star column, so an unfrozen Host re-measures the entire form on every frame —
+    /// measured at ~85ms a frame, which left a 150ms collapse with three rendered frames and no curve to see. Freezing
+    /// it at its final width costs one reflow at the start and buys back the ~10fps animation; what the user then
+    /// watches is the sidebar wipe in over a page that has already settled.
     /// </summary>
     private void OnPaneState(bool open)
     {
         var target = open ? PaneOpenWidth : PaneCompactWidth;
-        var anim = new DoubleAnimation(PaneShell.ActualWidth, target, TimeSpan.FromMilliseconds(160))
+        var gen = ++_paneAnimGen;
+        if (PaneShell.Parent is Grid columns) Host.Width = columns.ActualWidth - target;
+        var anim = new DoubleAnimation(PaneShell.ActualWidth, target,
+            TimeSpan.FromMilliseconds(open ? 240 : 150))
         {
-            AccelerationRatio = 0.4,
+            EasingFunction = new CubicEase { EasingMode = open ? EasingMode.EaseInOut : EasingMode.EaseOut },
             FillBehavior = FillBehavior.Stop
         };
         anim.Completed += (_, _) =>
         {
+            // WPF hands a bare EventArgs to Completed, so a reversed toggle has to be detected by generation:
+            // the run that got replaced must not release the new animation or write back its stale rest width.
+            if (gen != _paneAnimGen) return;
             PaneShell.Width = target;
             PaneShell.BeginAnimation(WidthProperty, null);
+            Host.Width = double.NaN;
         };
         PaneShell.BeginAnimation(WidthProperty, anim);
-        _navPane?.SetHeaderVisible(open);
+        _navPane?.SetPaneWide(open);
         AppEnv.SetPaneOpen(open);
     }
 
@@ -183,10 +201,11 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void BuildNav()
     {
-        _navPane = new NavPane(Nav, Show);
+        _navPane = new NavPane(Nav, NavCursor, PaneLayer, Show);
         _navPane.WizardRequested += ReopenWizard;
+        _navPane.OpenPaneRequested += () => Nav.IsPaneOpen = true;
         _navPane.Build(_ws!);
-        _navPane.SetHeaderVisible(Nav.IsPaneOpen);
+        _navPane.SetPaneWide(Nav.IsPaneOpen);
     }
 
     private void ReopenWizard()
