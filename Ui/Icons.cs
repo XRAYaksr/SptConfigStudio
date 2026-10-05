@@ -39,7 +39,7 @@ public static class Icons
         ["inventory.json"] = SymbolRegular.Backpack24,
         ["loot.json"] = SymbolRegular.Diamond24,
         ["seasonalevents.json"] = SymbolRegular.CalendarSparkle24,
-        ["backup"] = SymbolRegular.Vault24,
+        ["backup"] = SymbolRegular.Archive24,
         ["appearance"] = SymbolRegular.ColorFill24,
         ["wizard"] = SymbolRegular.Lightbulb24
     };
@@ -135,9 +135,9 @@ public static class Icons
         ("id", SymbolRegular.Tag24), ("ids", SymbolRegular.Tag24)
     ];
 
-    public static SymbolIcon ForFile(string key) => new() { Symbol = Files.TryGetValue(key, out var s) ? s : SymbolRegular.Options24 };
+    public static SymbolIcon ForFile(string key) => new() { Symbol = Files.TryGetValue(key, out var s) ? s : SymbolRegular.Options24, FontSize = 20 };
 
-    public static SymbolIcon ForCategory(string category) => new() { Symbol = Categories.TryGetValue(category, out var s) ? s : SymbolRegular.AppsList24 };
+    public static SymbolIcon ForCategory(string category) => new() { Symbol = Categories.TryGetValue(category, out var s) ? s : SymbolRegular.AppsList24, FontSize = 20 };
 
     /// <summary>Row icon, or null so the Auto column collapses and no empty slot is left behind.
     /// Booleans opt out on purpose: the switch itself is the affordance.</summary>
