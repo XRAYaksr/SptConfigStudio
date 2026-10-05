@@ -4,23 +4,24 @@
     <!-- Light counterpart to Theme/Dark.xaml: palette only, no styles and no fonts. Appearance.ApplyScheme appends
          this dictionary after Dark.xaml, and because WPF resolves merged dictionaries in reverse index order these
          keys win while Dark.xaml's implicit styles keep applying — their colour setters are all DynamicResource.
-         Warm, low-chroma sand/brass on the same 36-40° hue as the dark board: no pure white or pure grey. The alpha
-         nibbles from Dark.xaml are copied verbatim, only the tint direction flips (white wash becomes black wash). -->
-    <Color x:Key="C.Bg">#FFE9E4D9</Color>
-    <Color x:Key="C.Surface">#FFFAF8F1</Color>
-    <Color x:Key="C.SurfaceAlt">#FFEDE8DC</Color>
-    <Color x:Key="C.SurfaceHi">#FFE4DFD1</Color>
-    <Color x:Key="C.Layer">#99F4F1E8</Color>
-    <Color x:Key="C.LayerStrong">#EBEFEADF</Color>
+         Grey, not sand: the warm tint this board used to carry is what read as an amber cast, so the neutrals sit on
+         R=G=B at the same lightness steps and only the accent tokens carry colour. The alpha nibbles from Dark.xaml
+         are copied verbatim, only the tint direction flips (white wash becomes black wash). -->
+    <Color x:Key="C.Bg">#FFE5E5E5</Color>
+    <Color x:Key="C.Surface">#FFF8F8F8</Color>
+    <Color x:Key="C.SurfaceAlt">#FFE8E8E8</Color>
+    <Color x:Key="C.SurfaceHi">#FFE0E0E0</Color>
+    <Color x:Key="C.Layer">#99F1F1F1</Color>
+    <Color x:Key="C.LayerStrong">#EBEAEAEA</Color>
     <Color x:Key="C.Sep">#14000000</Color>
     <Color x:Key="C.Border">#26000000</Color>
     <Color x:Key="C.BorderHi">#4D000000</Color>
-    <Color x:Key="C.Text">#FF2B2720</Color>
-    <Color x:Key="C.TextDim">#FF655D4E</Color>
+    <Color x:Key="C.Text">#FF282828</Color>
+    <Color x:Key="C.TextDim">#FF5E5E5E</Color>
     <Color x:Key="C.Accent">#FF89541C</Color>
     <Color x:Key="C.AccentHi">#FF653E15</Color>
     <Color x:Key="C.AccentLo">#FF794A19</Color>
-    <Color x:Key="C.OnAccent">#FFF2EFE6</Color>
+    <Color x:Key="C.OnAccent">#FFEEEEEE</Color>
     <Color x:Key="C.Good">#FF4F6B2E</Color>
     <Color x:Key="C.Bad">#FF95332A</Color>
     <Color x:Key="C.Warn">#FF8A5A12</Color>
@@ -48,12 +49,12 @@
     <SolidColorBrush x:Key="Brasa.AccentGhost" Opacity="0.28" Color="{StaticResource C.Accent}" />
 
     <!-- Same six keys as Dark.xaml: ApplyMaterials looks them up by $"Brasa.Pane.{material}", so a missing one throws. -->
-    <SolidColorBrush x:Key="Brasa.Pane.Mica" Color="#99F4F1E8" />
-    <SolidColorBrush x:Key="Brasa.Pane.Acrylic" Color="#6EF4F1E8" />
-    <SolidColorBrush x:Key="Brasa.Pane.Opaque" Color="#FFF4F1E8" />
-    <SolidColorBrush x:Key="Brasa.Content.Mica" Color="#EBEFEADF" />
-    <SolidColorBrush x:Key="Brasa.Content.Acrylic" Color="#C2EFEADF" />
-    <SolidColorBrush x:Key="Brasa.Content.Opaque" Color="#FFEFEADF" />
+    <SolidColorBrush x:Key="Brasa.Pane.Mica" Color="#99F1F1F1" />
+    <SolidColorBrush x:Key="Brasa.Pane.Acrylic" Color="#6EF1F1F1" />
+    <SolidColorBrush x:Key="Brasa.Pane.Opaque" Color="#FFF1F1F1" />
+    <SolidColorBrush x:Key="Brasa.Content.Mica" Color="#EBEAEAEA" />
+    <SolidColorBrush x:Key="Brasa.Content.Acrylic" Color="#C2EAEAEA" />
+    <SolidColorBrush x:Key="Brasa.Content.Opaque" Color="#FFEAEAEA" />
     <SolidColorBrush x:Key="Brasa.PaneBackground" Color="{StaticResource C.Layer}" />
     <SolidColorBrush x:Key="Brasa.ContentBackground" Color="{StaticResource C.LayerStrong}" />
 
@@ -63,7 +64,7 @@
     <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="{StaticResource C.AccentHi}" />
     <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="{StaticResource C.Accent}" />
     <SolidColorBrush x:Key="ListBoxItemSelectedBackgroundThemeBrush" Color="{StaticResource C.Accent}" />
-    <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{StaticResource C.Accent}" />
+    <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="Transparent" /><!-- NavPane draws the sliding bar itself -->
     <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="{StaticResource C.SurfaceHi}" />
     <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedLeftFluent" Color="{StaticResource C.SurfaceHi}" />
     <SolidColorBrush x:Key="NavigationViewItemSeparatorForeground" Color="{StaticResource C.Sep}" />

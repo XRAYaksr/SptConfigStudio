@@ -3,25 +3,26 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!-- Neutral tokens: Fluent layering (translucent white over a warm dark base) plus the SPT amber accent.
+    <!-- Neutral tokens: Fluent layering (translucent white over a flat dark base) plus the SPT amber accent. The
+         neutrals are deliberately grey, not sand — the accent is the only source of colour on the board.
          WPF-UI pins its own accent to the Windows system colour: keys it resolves with StaticResource can only be
          replaced per control, but keys resolved with DynamicResource are retargeted below, since this dictionary
          merges last. -->
-    <Color x:Key="C.Bg">#FF1A1A17</Color>
-    <Color x:Key="C.Surface">#FF272724</Color>
-    <Color x:Key="C.SurfaceAlt">#FF302F2B</Color>
-    <Color x:Key="C.SurfaceHi">#FF333330</Color>
-    <Color x:Key="C.Layer">#99242421</Color>
-    <Color x:Key="C.LayerStrong">#EB201F1C</Color>
+    <Color x:Key="C.Bg">#FF1A1A1A</Color>
+    <Color x:Key="C.Surface">#FF272727</Color>
+    <Color x:Key="C.SurfaceAlt">#FF303030</Color>
+    <Color x:Key="C.SurfaceHi">#FF333333</Color>
+    <Color x:Key="C.Layer">#99242424</Color>
+    <Color x:Key="C.LayerStrong">#EB202020</Color>
     <Color x:Key="C.Sep">#14FFFFFF</Color>
     <Color x:Key="C.Border">#26FFFFFF</Color>
     <Color x:Key="C.BorderHi">#4DFFFFFF</Color>
-    <Color x:Key="C.Text">#FFDCD6C8</Color>
-    <Color x:Key="C.TextDim">#FF968F80</Color>
+    <Color x:Key="C.Text">#FFD8D8D8</Color>
+    <Color x:Key="C.TextDim">#FF909090</Color>
     <Color x:Key="C.Accent">#FFE08A2E</Color>
     <Color x:Key="C.AccentHi">#FFF5A350</Color>
     <Color x:Key="C.AccentLo">#FFB96F1E</Color>
-    <Color x:Key="C.OnAccent">#FF141412</Color>
+    <Color x:Key="C.OnAccent">#FF141414</Color>
     <Color x:Key="C.Good">#FF86A65A</Color>
     <Color x:Key="C.Bad">#FFC25A4A</Color>
     <Color x:Key="C.Warn">#FFD9A441</Color>
@@ -50,12 +51,12 @@
          material brushes below; their defaults equal C.Layer / C.LayerStrong so nothing changes on first launch.
          Mica keeps the current strengths (the pane needs to stay translucent to read as mica, the content area
          needs to stay near-opaque to hold form fields); acrylic thins the tint so the DWM blur shows through. -->
-    <SolidColorBrush x:Key="Brasa.Pane.Mica" Color="#99242421" />
-    <SolidColorBrush x:Key="Brasa.Pane.Acrylic" Color="#6E242421" />
-    <SolidColorBrush x:Key="Brasa.Pane.Opaque" Color="#FF242421" />
-    <SolidColorBrush x:Key="Brasa.Content.Mica" Color="#EB201F1C" />
-    <SolidColorBrush x:Key="Brasa.Content.Acrylic" Color="#C2201F1C" />
-    <SolidColorBrush x:Key="Brasa.Content.Opaque" Color="#FF201F1C" />
+    <SolidColorBrush x:Key="Brasa.Pane.Mica" Color="#99242424" />
+    <SolidColorBrush x:Key="Brasa.Pane.Acrylic" Color="#6E242424" />
+    <SolidColorBrush x:Key="Brasa.Pane.Opaque" Color="#FF242424" />
+    <SolidColorBrush x:Key="Brasa.Content.Mica" Color="#EB202020" />
+    <SolidColorBrush x:Key="Brasa.Content.Acrylic" Color="#C2202020" />
+    <SolidColorBrush x:Key="Brasa.Content.Opaque" Color="#FF202020" />
     <SolidColorBrush x:Key="Brasa.PaneBackground" Color="{StaticResource C.Layer}" />
     <SolidColorBrush x:Key="Brasa.ContentBackground" Color="{StaticResource C.LayerStrong}" />
 
@@ -65,7 +66,7 @@
     <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="{StaticResource C.AccentHi}" />
     <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="{StaticResource C.Accent}" />
     <SolidColorBrush x:Key="ListBoxItemSelectedBackgroundThemeBrush" Color="{StaticResource C.Accent}" />
-    <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{StaticResource C.Accent}" />
+    <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="Transparent" /><!-- NavPane draws the sliding bar itself -->
     <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="{StaticResource C.SurfaceHi}" />
     <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedLeftFluent" Color="{StaticResource C.SurfaceHi}" />
     <SolidColorBrush x:Key="NavigationViewItemSeparatorForeground" Color="{StaticResource C.Sep}" />
