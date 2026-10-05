@@ -94,7 +94,7 @@ cd SptConfigStudio
 dotnet run
 
 # 打包发布（生成两个压缩包）
-pwsh -File package.ps1 -Version 1.1.0
+pwsh -File package.ps1 -Version 1.1.1
 ```
 
 `package.ps1` 在 `release/` 下产出两个 Windows x64 压缩包：

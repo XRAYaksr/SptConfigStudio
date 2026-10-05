@@ -8,7 +8,7 @@
     files at the archive root, so unzipping always lands in a clean directory.
 #>
 param(
-    [string]$Version = '1.1.0',
+    [string]$Version = '1.1.1',
     [string]$Rid = 'win-x64'
 )
 
